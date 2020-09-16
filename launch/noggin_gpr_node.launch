@@ -1,0 +1,4 @@
+<launch>
+    <rosparam file="$(find noggin_gpr_node)/config/noggin_gpr_config.yaml" />
+    <node name="noggin_gpr_node" pkg="noggin_gpr_node" type="noggin_gpr_node" args="logtostderr=1" output="screen"/>
+</launch>

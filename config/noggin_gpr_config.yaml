@@ -1,0 +1,25 @@
+# Device serial number.
+device_id: 01
+
+# Serial baud rate.
+baud_rate: 115200
+
+# Sampling frequency in Hz.
+sampling_frequency: 20
+
+# GPR parameters.
+# Remove DC offset using high-pass dewow filter.
+filter: true
+
+# Number of points in collected by system. Between 40 and 5001.
+points: 200
+
+# Collection point offset from first airwave arrives at receiving antenna.
+# Negative values start recording before first airwave
+# Positive values start recording after first airwave
+point_offset: -20
+
+# ROS output topic for custom StampedWaveform message.
+output_trace_topic: "/gpr/stamped_trace"
+
+bypass_device_startup: true
