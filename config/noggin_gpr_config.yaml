@@ -12,7 +12,7 @@ sampling_frequency: 20
 filter: true
 
 # Number of points in collected by system. Between 40 and 5001.
-points: 200
+points: 201
 
 # Collection point offset from first airwave arrives at receiving antenna.
 # Negative values start recording before first airwave
@@ -22,4 +22,4 @@ point_offset: -20
 # ROS output topic for custom StampedWaveform message.
 output_trace_topic: "/gpr/stamped_trace"
 
-bypass_device_startup: true
+bypass_device_startup: false

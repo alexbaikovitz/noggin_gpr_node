@@ -14,9 +14,7 @@ int main (int argc, char** argv) {
 
   ros::Rate rate(noggin_device.GetSamplingFrequency());
   while (ros::ok()) {
-    if (noggin_device.ready_to_sample_) {
-      noggin_device.RequestTrace();
-    }
+    noggin_device.RequestTrace();
     rate.sleep();
   }
   return EXIT_SUCCESS;
