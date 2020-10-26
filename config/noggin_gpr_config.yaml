@@ -17,9 +17,10 @@ points: 201
 # Collection point offset from first airwave arrives at receiving antenna.
 # Negative values start recording before first airwave
 # Positive values start recording after first airwave
-point_offset: -20
+point_offset: -4
 
 # ROS output topic for custom StampedWaveform message.
 output_trace_topic: "/gpr/stamped_trace"
 
 bypass_device_startup: false
+

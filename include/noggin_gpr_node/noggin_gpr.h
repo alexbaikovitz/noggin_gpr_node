@@ -16,7 +16,7 @@ class NogginGpr {
     NogginGpr();
     ~NogginGpr() = default;
 
-    void RequestTrace() LOCKS_EXCLUDED(mu_);
+    bool RequestTrace() LOCKS_EXCLUDED(mu_);
     int GetSamplingFrequency();
 
     NogginGpr(const NogginGpr&);

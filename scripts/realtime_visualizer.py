@@ -16,7 +16,7 @@ class RealtimeVisualizer:
     self.config = config
     self.processor = RosbagVisualizer(config)
     self.num_points = self.config.num_points - abs(self.config.point_offset)
-    self.radar_array = np.zeros((181, 300))
+    self.radar_array = np.zeros((self.num_points, 300))
     self.viz_length = 300
     self.counter = 0
     self.trace_to_image_converter = TraceToImage()
@@ -31,7 +31,7 @@ class RealtimeVisualizer:
 
     self.counter += 1
     # if self.counter % 4 == 0:
-    processed_trace = self.processor.ProcessAScan(np.array(msg.trace))
+    processed_trace,_ = self.processor.ProcessAScan(np.array(msg.trace))
     processed_trace = self.trace_to_image_converter.Update(processed_trace)
     # print(processed_trace)
     # if self.counter//4 < self.viz_length:
@@ -48,9 +48,10 @@ class RealtimeVisualizer:
 
     if self.counter % 3 == 0:
       cv2.namedWindow("rad", cv2.WINDOW_NORMAL)
-      # cv2.resizeWindow("rad", 500, 500)
-      cv2.imshow("rad", self.radar_array.astype(np.uint8))
-      
+      cv2.resizeWindow("rad", 1000, 1000)
+      # filtered = cv2.bilateralFilter(self.radar_array.astype(np.int16),5,25,25)
+      cv2.imshow("rad", self.radar_array.astype(np.int16))
+      # cv2.imshow("rad", filtered)
       if cv2.waitKey(1) & 0xFF == ord('q'):
         return
 

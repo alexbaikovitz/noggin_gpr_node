@@ -143,7 +143,7 @@ target_link_libraries(noggin_gpr_ros ${catkin_LIBRARIES} glog)
 
 add_library(noggin_gpr src/noggin_gpr.cpp)
 add_dependencies(noggin_gpr ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(noggin_gpr ${catkin_LIBRARIES} glog absl::base absl::status absl::synchronization absl::strings noggin_gpr_ros)
+target_link_libraries(noggin_gpr ${catkin_LIBRARIES} glog absl::base absl::strings absl::status absl::synchronization absl::strings noggin_gpr_ros)
 
 add_executable(noggin_gpr_node src/noggin_gpr_node_main.cpp)
 add_dependencies(noggin_gpr_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})

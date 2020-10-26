@@ -5,11 +5,13 @@
 #include <vector>
 #include <chrono>
 #include <thread>
+#include <cmath>
 #include <serial/serial.h>
 #include <absl/strings/match.h>
 #include "absl/status/status.h"
 #include "absl/synchronization/mutex.h"
 #include "absl/base/thread_annotations.h"
+#include "absl/strings/str_format.h"
 #include "ros/time.h"
 
 
@@ -25,6 +27,7 @@ constexpr char kOnStateIndicator[] = "TPU";
 constexpr char kTracePrefix[] = "T01";
 // TODO(abaikovitz) Clean up serial comms.
 constexpr int kAdditionalInformation = 6;
+constexpr int kInitialBytes = 3;
 constexpr int kNumberAttempts = 4;
 constexpr int kTimeOut = 100; // ms.
 
@@ -32,12 +35,12 @@ std::vector<int16_t> FormatTrace(const std::string& raw_trace,
                                  const int& points) {
   std::vector<int16_t> out(points);
   int16_t trace_element;
-  for (int i = 3; i < 2 * points; i++) {
-    if((i % 2) == 1) {
+  for (int i = 0; i < 2 * points; i++) {
+    if(((kInitialBytes + i) % 2) == 1) {
       trace_element = 0;
-      trace_element = trace_element | static_cast<uint8_t>(raw_trace.at(i)) << 8;
+      trace_element = trace_element | static_cast<uint8_t>(raw_trace.at(kInitialBytes + i)) << 8;
     } else {
-      out[(i-3) / 2] = trace_element | static_cast<uint8_t>(raw_trace.at(i));
+      out[i / 2] = trace_element | static_cast<uint8_t>(raw_trace.at(kInitialBytes + i));
     }
   } 
   return out;
@@ -110,13 +113,10 @@ absl::Status NogginGpr::BootNogginGprDevice() {
 
 NogginGpr::NogginGpr() : ros_radar_(NogginGprRos()),
                          trace_vector_size_(
-                           ros_radar_.noggin_config_.points 
+                           2*ros_radar_.noggin_config_.points 
                            + kAdditionalInformation) {
   ROS_INFO_STREAM("Opening port: " << kSerialPortPath);
-  // serial_ = new serial::Serial(kSerialPortPath, 
-  //                          ros_radar_.noggin_config_.baud_rate,
-  //                          serial::Timeout::simpleTimeout(kTimeOut));
-  
+
   serial_ = new serial::Serial();
   InitializeSerialPort(serial_, ros_radar_.noggin_config_.baud_rate);
   ROS_INFO_STREAM("Opened radar USB port: " << kSerialPortPath);
@@ -139,14 +139,38 @@ NogginGpr::NogginGpr() : ros_radar_(NogginGprRos()),
     ROS_INFO_STREAM("Booted Noggin GPR Device " 
                     << ros_radar_.noggin_config_.device_id);
   
-  ROS_INFO_STREAM("Entering blocking time for 10s.");
-  ros::Time release = ros::Time::now() + ros::Duration(10);
-  while (ros::Time::now() < release) {
-    if (serial_->available()) {
-      serial_->read(serial_->available());
+    ROS_INFO_STREAM("Entering blocking time for 10s.");
+    ros::Time release = ros::Time::now() + ros::Duration(10);
+    while (ros::Time::now() < release) {
+      if (serial_->available()) {
+        serial_->read(serial_->available());
+      }
+      ros::Duration(0.5).sleep();
     }
-    ros::Duration(0.5).sleep();
-  }
+
+    // Set number of points queried from Noggin.
+    std::string points_cmd = 
+      absl::StrFormat("%d P\r", ros_radar_.noggin_config_.points);
+    for (int i=0; i < kNumberAttempts; i++) {
+      serial_->write(points_cmd.c_str());
+    }
+    ROS_INFO_STREAM("Wrote \"" << points_cmd << "\" to Noggin device.");
+
+    ros::Duration(4).sleep();
+
+    // Set starting offset from Noggin.
+    
+    std::string offset_start_cmd;
+    int offset = std::abs(ros_radar_.noggin_config_.point_offset);
+    ros_radar_.noggin_config_.point_offset < 0 ? 
+      offset_start_cmd = absl::StrFormat("%d-\r", offset) : 
+      offset_start_cmd = absl::StrFormat("%d+\r", offset);
+
+    for (int i=0; i < kNumberAttempts; i++) {
+      serial_->write(offset_start_cmd.c_str());
+    }
+    ROS_INFO_STREAM("Wrote \"" << offset_start_cmd << "\" to Noggin device.");
+    ros::Duration(4).sleep();
   }
   ROS_INFO_STREAM("Noggin GPR device intialized.");
 }
@@ -155,27 +179,29 @@ int NogginGpr::GetSamplingFrequency() {
   return ros_radar_.noggin_config_.sampling_frequency;
 }
 
-void NogginGpr::RequestTrace() {
+bool NogginGpr::RequestTrace() {
   mu_.Lock();
   serial_->flush();
   ros::Time time = ros::Time::now();
   serial_->write(kRequestTraceCmd);
   ros::Time trace_acquisition_time = ros::Time::now();
   
-  std::string result = serial_->read(408);
-  // ROS_INFO_STREAM("Result length " << result);
+  std::string result = serial_->read(trace_vector_size_);
+  // ROS_INFO_STREAM("Result length " << result.length());
 
   mu_.Unlock();
   size_t starting_position = result.find(kTracePrefix);
   std::string raw_trace;
-  if (starting_position != std::string::npos && result.length() == 408) {
+  if (result.length() == trace_vector_size_) {
     // raw_trace = result.substr(starting_position + strlen(kTracePrefix), 
     //                           2 * ros_radar_.noggin_config_.points);
     // std::vector<int16_t> out = FormatTrace(raw_trace, 
     //                                        ros_radar_.noggin_config_.points);
-    std::vector<int16_t> out = FormatTrace(result, 200);
+    std::vector<int16_t> out = FormatTrace(result, ros_radar_.noggin_config_.points);
     ros_radar_.PublishTrace(trace_acquisition_time, out);
+    return true;
   }
+  return false;
 }
 
 
