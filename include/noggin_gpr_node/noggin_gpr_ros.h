@@ -10,6 +10,8 @@ namespace lgpr::noggin {
 struct NogginGprConfig {
   int device_id;
 
+  std::string serial_port_id;
+
   int baud_rate;
 
   int sampling_frequency;

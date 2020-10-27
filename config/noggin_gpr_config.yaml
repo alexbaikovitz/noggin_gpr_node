@@ -1,6 +1,9 @@
 # Device serial number.
 device_id: 01
 
+# Device serial port id.
+serial_port_id: "/dev/ttyUSB0"
+
 # Serial baud rate.
 baud_rate: 115200
 
