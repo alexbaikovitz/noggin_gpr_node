@@ -22,7 +22,6 @@ namespace {
 constexpr char kRequestTraceCmd[] = "T\r";
 constexpr char kOnCmd[] = "XON\r";
 constexpr char kReportCmd[] = "R\r";
-constexpr char kSerialPortPath[] = "/dev/ttyUSB0";
 constexpr char kOnStateIndicator[] = "TPU";
 constexpr char kTracePrefix[] = "T01";
 // TODO(abaikovitz) Clean up serial comms.
@@ -68,23 +67,23 @@ void analyze_trace(uint8_t* input, int num_points, std::vector<int16_t> &trace) 
     }
 }
 
-void InitializeSerialPort(serial::Serial* serial, const int& baud_rate) {
+void InitializeSerialPort(serial::Serial* serial, const NogginGprConfig& config) {
   for (int i=0; i < kNumberAttempts; i++) {
     try {
-      ROS_INFO_STREAM("Opening radar USB port: " << kSerialPortPath);
-      serial->setPort(kSerialPortPath);
-      serial->setBaudrate(baud_rate);
+      ROS_INFO_STREAM("Opening radar USB port: " << config.serial_port_id);
+      serial->setPort(config.serial_port_id);
+      serial->setBaudrate(config.baud_rate);
       serial::Timeout to = serial::Timeout::simpleTimeout(kTimeOut);
       serial->setTimeout(to);
       serial->open();
       if (serial->isOpen()) break;
     } 
     catch(serial::IOException& e) {
-      ROS_INFO_STREAM("Unable to open radar USB port: " << kSerialPortPath);
+      ROS_INFO_STREAM("Unable to open radar USB port: " << config.serial_port_id);
     }
     ros::Duration(1.5).sleep();
   }
-  CHECK(serial->isOpen()) << "Unable to open radar USB port" << kSerialPortPath;
+  CHECK(serial->isOpen()) << "Unable to open radar USB port" << config.serial_port_id;
 
 
 }
@@ -115,13 +114,13 @@ NogginGpr::NogginGpr() : ros_radar_(NogginGprRos()),
                          trace_vector_size_(
                            2*ros_radar_.noggin_config_.points 
                            + kAdditionalInformation) {
-  ROS_INFO_STREAM("Opening port: " << kSerialPortPath);
+  ROS_INFO_STREAM("Opening port: " << ros_radar_.noggin_config_.serial_port_id);
 
   serial_ = new serial::Serial();
-  InitializeSerialPort(serial_, ros_radar_.noggin_config_.baud_rate);
+  InitializeSerialPort(serial_, ros_radar_.noggin_config_);
   // Reset serial buffer.
   serial_->flush();
-  ROS_INFO_STREAM("Opened radar USB port: " << kSerialPortPath);
+  ROS_INFO_STREAM("Opened radar USB port: " << ros_radar_.noggin_config_.serial_port_id);
 
   if (!ros_radar_.noggin_config_.bypass_device_startup) {
     ROS_INFO_STREAM("Beginning to autobaud for 10s.");

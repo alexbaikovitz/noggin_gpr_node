@@ -14,6 +14,7 @@ constexpr int kTraceQueue = 20;
 NogginGprRos::NogginGprRos() : nh_("~") {
   // Populate the noggin configuration structure.
   nh_.getParam("/device_id", noggin_config_.device_id);
+  nh_.getParam("/serial_port_id", noggin_config_.serial_port_id);
   nh_.getParam("/baud_rate", noggin_config_.baud_rate);
   nh_.getParam("/sampling_frequency", noggin_config_.sampling_frequency);
   nh_.getParam("/filter", noggin_config_.filter);
