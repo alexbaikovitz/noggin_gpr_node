@@ -119,6 +119,7 @@ NogginGpr::NogginGpr() : ros_radar_(NogginGprRos()),
 
   serial_ = new serial::Serial();
   InitializeSerialPort(serial_, ros_radar_.noggin_config_.baud_rate);
+  // Reset serial buffer.
   serial_->flush();
   ROS_INFO_STREAM("Opened radar USB port: " << kSerialPortPath);
 
